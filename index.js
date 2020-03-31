@@ -32,7 +32,7 @@ function creareLessonTable(arr) {
 			result = result + '</tr>';
 		}
 		result = result + '</table>';
-		result = result + '<script src="scripts.js"></script></body></html>';
+		result = result + '<script src="./scripts.js"></script></body></html>';
 		return result;
 	}
 
