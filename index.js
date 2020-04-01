@@ -6,35 +6,32 @@ const static = require('node-static');
 const PORT = process.env.PORT || 5000;
 const file = new static.Server('./public');
 
-let obj;
-let lessonsArray;
+const howeworksUrl = '/homeworks';
 
-function creareLessonTable(arr) {
-		let result = '';
-		result = result + '<html><body><table>';
+function createLessonsTable(arr) {
+	let result = '';
+	result = result + '<html><body><table>';
+	result = result + '<tr>';
+	result = result + `<td>Number</td>`;
+	result = result + `<td>Lessons title</td>`;
+	result = result + '</tr>';
+
+	for (let i = arr.length - 1; i >= 0; i--) {
+		let id = arr[i].id;
 		result = result + '<tr>';
-		result = result + `<td>Number</td>`;
-		result = result + `<td>Lessons title</td>`;
+		result = result + `<td>${arr[i].number}</td>`;
+		result = result + '<td>';
+		result = result + `<a class="title" href="homeworks/${arr[i].id}">${arr[i].title}</a>`;
+		result = result + '</td>';
+		result = result + '<td>';
+		result = result + `<button onclick= "buttonClick('${id}')">X</button>`;
+		result = result + '</td>';
 		result = result + '</tr>';
-
-		for (let i = arr.length - 1; i >= 0; i--) {
-			result = result + '<tr>';
-			result = result + `<td>${arr[i].number}</td>`;
-			result = result + `<td> 
-			<a class="title" href="homeworks/${arr[i].id}">
-      ${arr[i].title}
-    </a></td>`;
-			result = result + `<td>
-			
-			<button id="${arr[i].id}">X</button>
-		
-			</td>`;
-			result = result + '</tr>';
-		}
-		result = result + '</table>';
-		result = result + '<script src="scripts.js"></script></body></html>';
-		return result;
 	}
+	result = result + '</table>';
+	result = result + '<script src="./scripts.js"></script></body></html>';
+	return result;
+}
 
 /**
  * @param {http.IncomingMessage} req
@@ -42,73 +39,58 @@ function creareLessonTable(arr) {
  */
 
 const requestListener = (req, res) => {
+	req.addListener('end', function () {
+		fs.readFile('./homeworks.json', 'utf8', function (error, data) {
+			if (error) {
+				throw error;
+			}
+			const lessonsArray = JSON.parse(data.toString());
+		
+			if (!req.url.startsWith(howeworksUrl)) {
+				file.serve(req, res);
+				return;
+			}
 
-
-	
-	if (!req.url.startsWith('/homeworks')) {
-		res.statusCode = 404;
-		res.write('Wrong url');
-		res.end();
-		return;
-	}
-
-	fs.readFile('./homeworks.json', 'utf8', function (error, data) {
-		if (error) {
-			throw error; 
-		}
-		obj = data;
-	});
-
-	setTimeout(() => {
-		lessonsArray = JSON.parse(obj.toString());
-
-		if (req.url.startsWith('/homeworks')) {
-			
-				console.log(req.method);
-			
-
-			if (req.url === '/homeworks') {
-				
+			if (req.url === howeworksUrl) {
 				res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-				res.write(creareLessonTable(lessonsArray));
+				res.write(createLessonsTable(lessonsArray));
 				res.end();
 				return;
 			}
 
-			let urlArray = req.url.split('/');
-			requiredId = urlArray[urlArray.length - 1];
+			if (req.url.startsWith(howeworksUrl) && req.url.length > howeworksUrl.length) {
+				let splitedUrl = req.url.split('/');
+				requiredId = splitedUrl[splitedUrl.length - 1];
 
-			let requiredLesson =	lessonsArray.find(lesson => {				
-				return requiredId === lesson.id;				
-			});
+				if (req.method === 'DELETE') {
+					const filteredLessons = lessonsArray.filter(lesson => {
+						return requiredId !== lesson.id;
+					});
+					fs.writeFile("homeworks.json", JSON.stringify(filteredLessons), () => {
+						res.writeHead(200);
+						res.end();
+						return;
+					})
+				}
 
-			if (requiredLesson) {
-				console.log(`${requiredLesson.title}`);
-				res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-				res.write(JSON.stringify(requiredLesson));
+				let requiredLesson = lessonsArray.find(lesson => {
+					return requiredId === lesson.id;
+				});
 
-			} else {
-				console.log('not such les');
-				res.statusCode = 404;
-				res.write('There is no such lesson');
+				if (requiredLesson) {
+					console.log(`${requiredLesson.title}`);
+					res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+					res.write(JSON.stringify(requiredLesson));
+				} else {
+					res.writeHead(400);
+					res.write('Wrong URL!!!!');
+				}
+				res.end();
 			}
-			res.end();
-		}
-
-		req.addListener('end', function () {
-		file.serve(req, res)
+		});
 	}).resume();
-
-	}, 1000);
-
-
-	
-
-
-
-
-
 }
+
 const server = http.createServer(requestListener);
 server.listen(PORT);
 
