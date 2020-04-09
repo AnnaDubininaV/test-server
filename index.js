@@ -1,12 +1,10 @@
 
 const http = require('http');
-const fs = require('fs');
-const static = require('node-static');
+const fs = require('fs').promises;
+const stat = require('node-static');
 
 const PORT = process.env.PORT || 5000;
-const file = new static.Server('./public');
-
-const howeworksUrl = '/homeworks';
+const file = new stat.Server('./public');
 
 function createLessonsTable(arr) {
 	let result = '';
@@ -39,62 +37,67 @@ function createLessonsTable(arr) {
  */
 
 const requestListener = (req, res) => {
-	req.addListener('end', function () {
 
-		if (!req.url.startsWith(howeworksUrl)) {
-			file.serve(req, res);
-			return;
-		}
+	if (!req.url.startsWith('/homeworks')) {
+		file.serve(req, res);
+		return;
+	}	
 
-		if (req.url.startsWith(howeworksUrl)) {
-			fs.readFile('./homeworks.json', 'utf8', function (error, data) {
-				if (error) {
-					throw error;
-				}
-				const lessonsArray = JSON.parse(data.toString());
+	if (req.url.startsWith('/homeworks')) {
+		const readData = () => {
+			return fs.readFile('./homeworks.json', 'utf8')
+				.then(fileData => JSON.parse(fileData.toString()))
+		};
 
-				if (req.url === howeworksUrl) {
-					res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-					res.write(createLessonsTable(lessonsArray));
-					res.end();
-					return;
-				}
-
-				if (req.url.length > howeworksUrl.length) {
-					
-					let splitedUrl = req.url.split('/');
-					requiredId = splitedUrl[splitedUrl.length - 1];
-
-					let requiredLesson = lessonsArray.find(lesson => {
-						return requiredId === lesson.id;
-					});
-
-					if (requiredLesson) {
-
-						if (req.method === 'DELETE') {
-							const filteredLessons = lessonsArray.filter(lesson => {
-								return requiredId !== lesson.id;
-							});
-							fs.writeFile("homeworks.json", JSON.stringify(filteredLessons), () => {
-								res.writeHead(200);
-								res.end();
-								return;
-							})
-						}
-
-						res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-						res.write(JSON.stringify(requiredLesson));
-					} else {
-						res.writeHead(400);
-						res.write('Wrong URL!!!!');
-					}
-					res.end();
-				}
+		if (req.url === '/homeworks') {
+			readData().then(lessonsList => {
+				res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+				res.write(createLessonsTable(lessonsList));
+				res.end();
+				return;
 			});
 		}
-	}).resume();
-}
 
+
+		if (req.url.startsWith('/homeworks/')) {
+			let requiredId = req.url.substring('/homeworks/'.length);
+
+			if (req.method === 'DELETE') {
+				readData()
+					.then(lessonsList => {
+						return lessonsList.filter(lesson => {
+							return requiredId !== lesson.id;
+						});
+					})
+					.then(filteredLessons => {
+						fs.writeFile("homeworks.json", JSON.stringify(filteredLessons))
+							.then(() => {
+								res.writeHead(200);
+								res.end();							
+							})
+					})
+						return;
+			}
+
+			readData()
+				.then(lessonsList => lessonsList.find(lesson => {
+					return requiredId === lesson.id;
+				})
+				)
+				.then(lesson => {
+					if (!lesson) {
+						res.writeHead(404);
+						res.end();
+						return;
+					}
+					res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+					res.write(JSON.stringify(lesson));
+					res.end();
+					return;
+				})
+		}
+	}
+};
 const server = http.createServer(requestListener);
 server.listen(PORT);
 
