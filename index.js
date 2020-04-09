@@ -41,7 +41,7 @@ const requestListener = (req, res) => {
 	if (!req.url.startsWith('/homeworks')) {
 		file.serve(req, res);
 		return;
-	}	
+	}
 
 	if (req.url.startsWith('/homeworks')) {
 		const readData = () => {
@@ -73,10 +73,10 @@ const requestListener = (req, res) => {
 						fs.writeFile("homeworks.json", JSON.stringify(filteredLessons))
 							.then(() => {
 								res.writeHead(200);
-								res.end();							
+								res.end();
 							})
 					})
-						return;
+				return;
 			}
 
 			readData()
