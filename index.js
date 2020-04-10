@@ -1,13 +1,11 @@
 const http = require('http');
 const fs = require('fs').promises;
-
 const nStatic = require('node-static');
-const fileServer = new nStatic.Server('./public');
-
 const Collection = require('./public/collections.js');
 
 const PORT = process.env.PORT || 5000;
 
+const fileServer = new nStatic.Server('./public');
 const collection = new Collection('homeworks');
 
 function createLessonsTable(arr) {
@@ -40,7 +38,7 @@ function createLessonsTable(arr) {
  * @param {http.ServerResponse} res
  */
 
-const requestListener = (req, res) => {
+const requestListener = async (req, res) => {
 
   const send = (data, header, showMessage) => {
     if (data) {
@@ -60,9 +58,8 @@ const requestListener = (req, res) => {
   if (req.url.startsWith('/homeworks')) {
 
     if (req.url === '/homeworks') {
-      collection.list().then(lessonsList => {
-        send(lessonsList, { "Content-Type": "text/html; charset=utf-8" }, createLessonsTable(lessonsList));
-      });
+      const lessonsList = await collection.list();
+      send(lessonsList, { "Content-Type": "text/html; charset=utf-8" }, createLessonsTable(lessonsList));
       return;
     }
 
@@ -70,24 +67,19 @@ const requestListener = (req, res) => {
       let requiredId = req.url.substring('/homeworks/'.length);
 
       if (req.method === 'DELETE') {
-        collection.deleteOne({ id: requiredId })
-          .then(filteredLessons => {
-            fs.writeFile('homeworks.json', JSON.stringify(filteredLessons))
-          })
-          .then(() => {
-            send();
-          });
+        const filteredLessons = await collection.deleteOne({ id: requiredId });
+        await fs.writeFile('homeworks.json', JSON.stringify(filteredLessons));
+        send();
         return;
       }
 
-      collection.findOne({ id: requiredId })
-        .then(lesson => {
-          console.log(lesson);
-          send(lesson, { "Content-Type": "application/json; charset=utf-8" }, JSON.stringify(lesson))
-          return;
-        });
+      const lesson = await collection.findOne({ id: requiredId });
+      send(lesson, { "Content-Type": "application/json; charset=utf-8" }, JSON.stringify(lesson));
+      return;
+
     }
   }
-};
+}
+
 const server = http.createServer(requestListener);
 server.listen(PORT);

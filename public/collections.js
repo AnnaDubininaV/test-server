@@ -12,21 +12,21 @@ class Collection {
     return this._readData();
   }
 
-  findOne(query) {
-    return this._readData()
-      .then(lessonsList => lessonsList.find(lesson => query.id === lesson.id))
+  async findOne(query) {
+    const list = await this._readData();
+    const listItem = list.find(item => query.id === item.id);
+    return listItem;
   }
 
-  deleteOne(query) {
-    return this._readData()
-      .then(lessonsList => {
-        return lessonsList.filter(lesson => query.id !== lesson.id);
-      })
+  async deleteOne(query) {
+    const list = await this._readData();
+    const filteredList = list.filter(lesson => query.id !== lesson.id);
+    return filteredList;
   }
 
-  _readData() {
-    return fs.readFile(this.filePath, 'utf-8')
-      .then(fileData => JSON.parse(fileData.toString()));
+  async _readData() {
+    const fileData = await fs.readFile(this.filePath, 'utf-8');
+    return JSON.parse(fileData.toString());
   }
 }
 
