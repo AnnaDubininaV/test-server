@@ -91,21 +91,3 @@ const requestListener = (req, res) => {
 };
 const server = http.createServer(requestListener);
 server.listen(PORT);
-
-
-                        //     if (req.method === 'DELETE') {
-                        //       readData()
-                        //         .then(lessonsList => {
-                        //           return lessonsList.filter(lesson => {
-                        //             return requiredId !== lesson.id;
-                        //           });
-                        //         })
-                        //         .then(filteredLessons => {
-                        //           fs.writeFile('homeworks.json', JSON.stringify(filteredLessons))
-                        //             .then(() => {
-                        //               res.writeHead(200);
-                        //               res.end();
-                        //             });
-                        //         });
-                        //       return;
-                        //     }
