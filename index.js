@@ -1,10 +1,14 @@
-
 const http = require('http');
 const fs = require('fs').promises;
-const stat = require('node-static');
+
+const nStatic = require('node-static');
+const fileServer = new nStatic.Server('./public');
+
+const Collection = require('./public/collections.js');
 
 const PORT = process.env.PORT || 5000;
-const file = new stat.Server('./public');
+
+const collection = new Collection('homeworks');
 
 function createLessonsTable(arr) {
   let result = '';
@@ -38,61 +42,48 @@ function createLessonsTable(arr) {
 
 const requestListener = (req, res) => {
 
+  const send = (data, header, showMessage) => {
+    if (data) {
+      res.writeHead(200, header);
+      if (showMessage) res.write(showMessage);
+    } else {
+      res.writeHead(404);
+    }
+    res.end();
+  }
+
   if (!req.url.startsWith('/homeworks')) {
-    file.serve(req, res);
+    fileServer.serve(req, res);
     return;
   }
 
   if (req.url.startsWith('/homeworks')) {
-    const readData = () => {
-      return fs.readFile('./homeworks.json', 'utf8')
-        .then(fileData => JSON.parse(fileData.toString()));
-    };
 
     if (req.url === '/homeworks') {
-      readData().then(lessonsList => {
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.write(createLessonsTable(lessonsList));
-        res.end();
-        return;
+      collection.list().then(lessonsList => {
+        send(lessonsList, { "Content-Type": "text/html; charset=utf-8" }, createLessonsTable(lessonsList));
       });
+      return;
     }
-
 
     if (req.url.startsWith('/homeworks/')) {
       let requiredId = req.url.substring('/homeworks/'.length);
 
       if (req.method === 'DELETE') {
-        readData()
-          .then(lessonsList => {
-            return lessonsList.filter(lesson => {
-              return requiredId !== lesson.id;
-            });
-          })
+        collection.deleteOne({ id: requiredId })
           .then(filteredLessons => {
             fs.writeFile('homeworks.json', JSON.stringify(filteredLessons))
-              .then(() => {
-                res.writeHead(200);
-                res.end();
-              });
+          })
+          .then(() => {
+            send();
           });
         return;
       }
 
-      readData()
-        .then(lessonsList => lessonsList.find(lesson => {
-          return requiredId === lesson.id;
-        })
-        )
+      collection.findOne({ id: requiredId })
         .then(lesson => {
-          if (!lesson) {
-            res.writeHead(404);
-            res.end();
-            return;
-          }
-          res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-          res.write(JSON.stringify(lesson));
-          res.end();
+          console.log(lesson);
+          send(lesson, { "Content-Type": "application/json; charset=utf-8" }, JSON.stringify(lesson))
           return;
         });
     }
@@ -101,3 +92,20 @@ const requestListener = (req, res) => {
 const server = http.createServer(requestListener);
 server.listen(PORT);
 
+
+                        //     if (req.method === 'DELETE') {
+                        //       readData()
+                        //         .then(lessonsList => {
+                        //           return lessonsList.filter(lesson => {
+                        //             return requiredId !== lesson.id;
+                        //           });
+                        //         })
+                        //         .then(filteredLessons => {
+                        //           fs.writeFile('homeworks.json', JSON.stringify(filteredLessons))
+                        //             .then(() => {
+                        //               res.writeHead(200);
+                        //               res.end();
+                        //             });
+                        //         });
+                        //       return;
+                        //     }
