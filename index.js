@@ -17,32 +17,6 @@ const templates = {
   homework: readFileSync('./templates/homework.html', 'utf-8'),
 };
 
-function createLessonsTable(arr) {
-  let result = '';
-  result = result + '<html><body><table>';
-  result = result + '<tr>';
-  result = result + '<td>Number</td>';
-  result = result + '<td>Lessons title</td>';
-  result = result + '</tr>';
-
-  for (let i = arr.length - 1; i >= 0; i--) {
-    let id = arr[i].id;
-    result = result + '<tr>';
-    result = result + `<td>${arr[i].number}</td>`;
-    result = result + '<td>';
-    result = result + `<a class="title" href="homeworks/${arr[i].id}">${arr[i].title}</a>`;
-    result = result + '</td>';
-    result = result + '<td>';
-    result = result + `<button ">chendge</button>`;
-    result = result + `<button onclick= "buttonClick('${id}')">X</button>`;
-    result = result + '</td>';
-    result = result + '</tr>';
-  }
-  result = result + '</table>';
-  result = result + '<script src="./scripts.js"></script></body></html>';
-  return result;
-}
-
 /**
  * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
