@@ -1,5 +1,4 @@
 function buttonClick(id) {
-
   const xhr = new XMLHttpRequest();
   xhr.open('DELETE', `/homeworks/${id}`);
   xhr.send();
@@ -7,3 +6,5 @@ function buttonClick(id) {
     location.reload();
   }
 }
+
+

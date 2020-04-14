@@ -1,12 +1,21 @@
 const http = require('http');
 const fs = require('fs').promises;
+const readFileSync = require('fs').readFileSync;
+const { parse } = require('querystring');
 const nStatic = require('node-static');
 const Collection = require('./public/collections.js');
+const Mustache = require('mustache');
 
 const PORT = process.env.PORT || 5000;
 
 const fileServer = new nStatic.Server('./public');
 const collection = new Collection('homeworks');
+
+
+const templates = {
+  list: readFileSync('./templates/list.html', 'utf-8'),
+  homework: readFileSync('./templates/homework.html', 'utf-8'),
+};
 
 function createLessonsTable(arr) {
   let result = '';
@@ -24,6 +33,7 @@ function createLessonsTable(arr) {
     result = result + `<a class="title" href="homeworks/${arr[i].id}">${arr[i].title}</a>`;
     result = result + '</td>';
     result = result + '<td>';
+    result = result + `<button ">chendge</button>`;
     result = result + `<button onclick= "buttonClick('${id}')">X</button>`;
     result = result + '</td>';
     result = result + '</tr>';
@@ -59,12 +69,14 @@ const requestListener = async (req, res) => {
 
     if (req.url === '/homeworks') {
       const lessonsList = await collection.list();
-      send(lessonsList, { "Content-Type": "text/html; charset=utf-8" }, createLessonsTable(lessonsList));
+      send(lessonsList, { "Content-Type": "text/html; charset=utf-8" }, Mustache.render(templates.list, { rows: lessonsList }));
       return;
     }
 
     if (req.url.startsWith('/homeworks/')) {
       let requiredId = req.url.substring('/homeworks/'.length);
+      const lesson = await collection.findOne({ id: requiredId });
+      console.log(req.method + ' ----' + req.url);
 
       if (req.method === 'DELETE') {
         const filteredLessons = await collection.deleteOne({ id: requiredId });
@@ -73,10 +85,41 @@ const requestListener = async (req, res) => {
         return;
       }
 
-      const lesson = await collection.findOne({ id: requiredId });
-      send(lesson, { "Content-Type": "application/json; charset=utf-8" }, JSON.stringify(lesson));
-      return;
+      if (req.method === 'GET') {
+        if (req.url === '/homeworks/new') {
+          send(true, {}, Mustache.render(templates.homework, { hw: lesson }));
+          return;
+        }
+        send(lesson, { "Content-Type": "text/html; charset=utf-8" }, Mustache.render(templates.homework, { hw: lesson }));
+        return;
+      }
 
+      if (req.method === 'POST') {
+
+        let body = '';
+        req.on('data', data => {
+          body = body + data.toString('utf8');
+        });
+
+        if (requiredId === 'new') {
+          req.on('end', async () => {
+            const updatedData = parse(body);
+            await collection.insertOne(updatedData);
+            res.writeHead(302, { Location: '/homeworks' });
+            res.end();
+          });
+          return;
+        }
+
+        req.on('end', async () => {
+          const updatedData = parse(body);
+          const updatedBody = Object.assign({}, lesson, updatedData);
+          await collection.updateOne(lesson.id, updatedBody);
+          res.writeHead(302, { Location: '/homeworks' });
+          res.end();
+        });
+        return;
+      }
     }
   }
 }

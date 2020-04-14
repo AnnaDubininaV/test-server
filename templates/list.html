@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../style.css">
+  <title>Homeworks</title>
+</head>
+
+<body>
+  <table>
+    {{#rows}}
+    <tr>
+      <td>{{number}}</td>
+      <td>
+        <a class="title" href="homeworks/{{id}}">{{title}}</a></td>
+      <td><button onclick= "buttonClick('{{id}}')">X</button></td>
+    </tr>
+    {{/rows}}
+  </table>
+
+  <a class="insert" href="homeworks/new"> + Add lesson </a>
+  <script src="./scripts.js"></script>
+
+</body>
+
+</html>

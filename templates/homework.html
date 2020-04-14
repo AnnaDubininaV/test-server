@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../style.css">
+  <title>Document</title>
+</head>
+
+<body>
+  {{#hw}}
+  <form method="POST">
+    <label for="number">Number
+      <input name="number" disabled type="text" value="{{number}}">
+    </label>
+    <label for="title">Title
+      <input name="title" type="text" value="{{title}}">
+    </label>
+    <label for="description">Description
+      <textarea class="description" name="description" id="">{{description}}</textarea>
+    </label>
+   
+    <div class="toolbar">
+      <button type="reset">Reset</button>
+      <button type="submit">Submit</button>
+    </div>
+  </form>
+  {{/hw}}
+
+  {{^hw}}
+  <form method="POST">
+    <label for="number">Number
+      <input name="number" type="number" required value="">
+    </label>
+    <label for="title">Title
+      <input name="title" type="text" required value="">
+    </label>
+    <label for="description">Description
+      <textarea class="description" name="description" required id=""></textarea>
+    </label>
+   
+    <div class="toolbar">
+      <button type="submit">Create lesson</button>
+    </div>
+  </form>
+  {{/hw}}
+
+</body>
+
+</html>

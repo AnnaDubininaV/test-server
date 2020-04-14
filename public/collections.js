@@ -24,9 +24,26 @@ class Collection {
     return filteredList;
   }
 
+  async updateOne(id, newItem) {
+    const list = await this._readData();
+    const updatedList = list.map(item => item.id === id ? newItem : item);
+    return this._writeData(updatedList);
+  }
+
+  async insertOne(newItem) {
+    newItem.id = Math.random().toString(16).slice(-12) + Math.random().toString(16).slice(-12);   
+    const list = await this._readData();    
+    list.unshift(newItem);
+    return this._writeData(list);
+  }
+
   async _readData() {
     const fileData = await fs.readFile(this.filePath, 'utf-8');
     return JSON.parse(fileData.toString());
+  }
+
+  _writeData(data) {
+    return fs.writeFile(this.filePath, JSON.stringify(data, null, 2), 'utf-8');    
   }
 }
 
